@@ -8,3 +8,7 @@ pyaudio
 SpeechRecognition
 google-cloud-speech
 langchain-google-genai
+pydub
+gtts
+ffmpeg
+ffmpeg-python
