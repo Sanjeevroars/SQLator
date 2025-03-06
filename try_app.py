@@ -2,6 +2,10 @@ from dotenv import load_dotenv
 import os
 import streamlit as st
 import speech_recognition as sr
+from gtts import gTTS
+from pydub import AudioSegment
+from pydub.playback import play
+import tempfile
 from langchain.utilities import SQLDatabase 
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
@@ -78,6 +82,14 @@ def get_response(user_query: str, db: SQLDatabase, chat_history: list):
         "chat_history": chat_history,
     })
 
+def play_tts(response_text):
+    if response_text:
+        tts = gTTS(response_text, lang="en")  
+        temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+        tts.save(temp_audio.name) 
+        audio = AudioSegment.from_mp3(temp_audio.name) 
+        play(audio)  
+
 # Initialize chat history
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
@@ -137,6 +149,7 @@ if st.button("🎤 Speak Now"):
         with st.chat_message("AI"):
             response = get_response(speech_text, st.session_state.db, st.session_state.chat_history)
             st.markdown(response)
+            play_tts(response)  # Play AI response as speech
 
         st.session_state.chat_history.append(AIMessage(content=response))
 
@@ -150,5 +163,6 @@ if user_query:
     with st.chat_message("AI"):
         response = get_response(user_query, st.session_state.db, st.session_state.chat_history)
         st.markdown(response)
+        play_tts(response)  # Play AI response as speech
 
     st.session_state.chat_history.append(AIMessage(content=response))
