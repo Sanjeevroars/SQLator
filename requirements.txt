@@ -4,3 +4,7 @@ langchain
 langchain_google_genai
 SQLAlchemy
 pymysql
+pyaudio
+SpeechRecognition
+google-cloud-speech
+langchain-google-genai
