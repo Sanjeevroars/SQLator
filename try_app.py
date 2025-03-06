@@ -99,7 +99,13 @@ if "chat_history" not in st.session_state:
 load_dotenv()
 
 st.set_page_config(page_title="SQLator: SQL Chatbot", page_icon=":speech_balloon:")
-st.title("SQL Chatbot")
+st.title("SQLator: Talk to ur Database")
+st.markdown(
+    """
+    SQLator is a chatbot that helps you query your database using natural language. 
+    You can type or speak your queries, and SQLator will provide its result.
+    """
+)
 
 with st.sidebar:
     st.subheader("Settings")
