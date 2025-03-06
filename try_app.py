@@ -93,12 +93,12 @@ def play_tts(response_text):
 # Initialize chat history
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
-        AIMessage(content="Hello! I am your SQL Bot. Please connect your database to begin."),
+        AIMessage(content="Hello! I am SQLator, your SQL Bot. Please connect your database to begin."),
     ]
 
 load_dotenv()
 
-st.set_page_config(page_title="SQL Chatbot", page_icon=":speech_balloon:")
+st.set_page_config(page_title="SQLator: SQL Chatbot", page_icon=":speech_balloon:")
 st.title("SQL Chatbot")
 
 with st.sidebar:
