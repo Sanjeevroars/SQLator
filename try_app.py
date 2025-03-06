@@ -121,14 +121,17 @@ with st.sidebar:
             st.session_state.db = db
             st.success("Connected to the database!")
 
-for message in st.session_state.chat_history:
-    with st.chat_message("AI" if isinstance(message, AIMessage) else "Human"):
-        st.markdown(message.content)
+chat_container = st.container()
+with chat_container:
+    for message in st.session_state.chat_history:
+        with st.chat_message("AI" if isinstance(message, AIMessage) else "Human"):
+            st.markdown(message.content)
 
 def recognize_speech():
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
-        st.write("Listening... Please speak your query.")
+        with st.chat_message("AI"):
+            st.markdown("🎤 **Listening... Please speak your query.**")  
         try:
             audio = recognizer.listen(source, timeout=5)
             text = recognizer.recognize_google(audio)
@@ -138,31 +141,42 @@ def recognize_speech():
         except sr.RequestError:
             return "Error connecting to Google Speech Recognition."
 
-if st.button("🎤 Speak Now"):
-    speech_text = recognize_speech()
-    if speech_text:
-        st.session_state.chat_history.append(HumanMessage(content=speech_text))
+# **INPUT FIELD & BUTTON: Fixed at the bottom of the latest message**
+input_container = st.empty()  
 
-        with st.chat_message("Human"):
-            st.markdown(speech_text)
+with input_container.container():
+    col1, col2 = st.columns([4, 1])  
 
-        with st.chat_message("AI"):
-            response = get_response(speech_text, st.session_state.db, st.session_state.chat_history)
-            st.markdown(response)
-            play_tts(response)  # Play AI response as speech
+    with col1:
+        user_query = st.chat_input("Type a message...")  
 
-        st.session_state.chat_history.append(AIMessage(content=response))
+    with col2:
+        if st.button("🎤 Speak Now", key="speak_button", help="Click to speak"):
+            speech_text = recognize_speech()
+            if speech_text:
+                st.session_state.chat_history.append(HumanMessage(content=speech_text))
 
-user_query = st.chat_input("Type a message...")
+                with chat_container:
+                    with st.chat_message("Human"):
+                        st.markdown(speech_text)
+
+                    with st.chat_message("AI"):
+                        response = get_response(speech_text, st.session_state.db, st.session_state.chat_history)
+                        st.markdown(response)
+                        play_tts(response)
+
+                st.session_state.chat_history.append(AIMessage(content=response))
+
 if user_query:
     st.session_state.chat_history.append(HumanMessage(content=user_query))
 
-    with st.chat_message("Human"):
-        st.markdown(user_query)
+    with chat_container:
+        with st.chat_message("Human"):
+            st.markdown(user_query)
 
-    with st.chat_message("AI"):
-        response = get_response(user_query, st.session_state.db, st.session_state.chat_history)
-        st.markdown(response)
-        play_tts(response)  # Play AI response as speech
+        with st.chat_message("AI"):
+            response = get_response(user_query, st.session_state.db, st.session_state.chat_history)
+            st.markdown(response)
+            play_tts(response)
 
     st.session_state.chat_history.append(AIMessage(content=response))
