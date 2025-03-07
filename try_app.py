@@ -136,8 +136,10 @@ with chat_container:
 def recognize_speech():
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
-        with st.chat_message("AI"):
-            st.markdown("🎤 **Listening... Please speak your query.**")  
+        listening_placeholder = st.empty()
+        with listening_placeholder.container():
+            with st.chat_message("AI"):
+                st.markdown("🎤 **Listening... Please speak your query.**")  
         try:
             audio = recognizer.listen(source, timeout=5)
             text = recognizer.recognize_google(audio)
@@ -146,6 +148,8 @@ def recognize_speech():
             return "Sorry, I couldn't understand the audio."
         except sr.RequestError:
             return "Error connecting to Google Speech Recognition."
+        finally:
+            listening_placeholder.empty()
 
 # **INPUT FIELD & BUTTON: Fixed at the bottom of the latest message**
 input_container = st.empty()  
