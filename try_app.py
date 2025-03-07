@@ -20,16 +20,16 @@ def init_database(user: str, password: str, host: str, name: str) -> SQLDatabase
 def get_sql_chain(db):
     template ="""
     You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
-    Based on the table schema below, write a SQL query that would answer the user's question. Take the conversation history into account.
+    Based on the table schema below, write a MySQL query that would answer the user's question. Take the conversation history into account.
     
     <SCHEMA>{schema}</SCHEMA>
     
     Conversation History: {chat_history}
     
-    Write only the SQL query and nothing else.
+    Write only the MySQL query and nothing else.
     
     Question: {question}
-    SQL Query: (only write SQL within ``` and a closing ```)
+    MySQL Query: (only write SQL within ``` and a closing ```)
     """
     prompt = ChatPromptTemplate.from_template(template)
 
@@ -51,7 +51,7 @@ def get_response(user_query: str, db: SQLDatabase, chat_history: list):
   
     template = """
     You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
-    Based on the table schema below, question, sql query, and sql response, write a natural language response.
+    Based on the table schema below, question, sql query, and sql response, write a natural language response in plain text with no special characters.
     <SCHEMA>{schema}</SCHEMA>
 
     Conversation History: {chat_history}
@@ -62,7 +62,7 @@ def get_response(user_query: str, db: SQLDatabase, chat_history: list):
     prompt = ChatPromptTemplate.from_template(template)
 
     api_key = os.getenv("GOOGLE_API_KEY")
-    llm = ChatGoogleGenerativeAI(model='gemini-1.5-pro', api_key=api_key, temperature=0)    
+    llm = ChatGoogleGenerativeAI(model='gemini-2.0-flash', api_key=api_key, temperature=0)    
 
     def clean_sql_string(sql_string):
         return sql_string.strip("```").lstrip("sql").strip()
@@ -88,7 +88,8 @@ def play_tts(response_text):
         temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
         tts.save(temp_audio.name) 
         audio = AudioSegment.from_mp3(temp_audio.name) 
-        play(audio)  
+        fast_audio = audio.speedup(playback_speed=1.25) 
+        play(fast_audio)
 
 # Initialize chat history
 if "chat_history" not in st.session_state:
