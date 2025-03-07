@@ -3,8 +3,6 @@ import os
 import streamlit as st
 import speech_recognition as sr
 from gtts import gTTS
-from pydub import AudioSegment
-from pydub.playback import play
 import tempfile
 from langchain.utilities import SQLDatabase 
 from langchain_core.messages import AIMessage, HumanMessage
@@ -12,6 +10,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
+import base64
+import io
 
 def init_database(user: str, password: str, host: str, name: str) -> SQLDatabase:
     db_uri = f"mysql+pymysql://{user}:{password}@{host}/{name}"
@@ -47,6 +47,10 @@ def get_sql_chain(db):
     )
 
 def get_response(user_query: str, db: SQLDatabase, chat_history: list):
+    # Check if database is connected
+    if not db:
+        return "Please connect to a database first."
+        
     sql_chain = get_sql_chain(db)
   
     template = """
@@ -82,13 +86,16 @@ def get_response(user_query: str, db: SQLDatabase, chat_history: list):
         "chat_history": chat_history,
     })
 
-def play_tts(response_text):
-    if response_text:
-        tts = gTTS(response_text, lang="en")  
-        temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
-        tts.save(temp_audio.name) 
-        audio = AudioSegment.from_mp3(temp_audio.name) 
-        play(audio)  
+def text_to_speech(text):
+    tts = gTTS(text=text, lang='en') 
+    fp = io.BytesIO()
+    tts.write_to_fp(fp)
+    fp.seek(0)
+    audio_bytes = fp.read()
+    audio_base64 = base64.b64encode(audio_bytes).decode()
+    audio_tag = f'<audio autoplay="true" src="data:audio/mp3;base64,{audio_base64}">'
+    
+    return audio_tag
 
 # Initialize chat history
 if "chat_history" not in st.session_state:
@@ -118,14 +125,21 @@ with st.sidebar:
 
     if st.button("Connect"):
         with st.spinner("Connecting to the Database..."):
-            db = init_database(
-                st.session_state["user"],
-                st.session_state["password"],
-                st.session_state["host"],
-                st.session_state["name"]
-            )
-            st.session_state.db = db
-            st.success("Connected to the database!")
+            try:
+                db = init_database(
+                    st.session_state["user"],
+                    st.session_state["password"],
+                    st.session_state["host"],
+                    st.session_state["name"]
+                )
+                st.session_state.db = db
+                st.success("Connected to the database!")
+            except Exception as e:
+                st.error(f"Failed to connect to the database: {str(e)}")
+                st.session_state.db = None
+
+if "db" not in st.session_state:
+    st.session_state.db = None
 
 chat_container = st.container()
 with chat_container:
@@ -151,7 +165,7 @@ def recognize_speech():
         finally:
             listening_placeholder.empty()
 
-# **INPUT FIELD & BUTTON: Fixed at the bottom of the latest message**
+# Input field & button
 input_container = st.empty()  
 
 with input_container.container():
@@ -171,9 +185,16 @@ with input_container.container():
                         st.markdown(speech_text)
 
                     with st.chat_message("AI"):
-                        response = get_response(speech_text, st.session_state.db, st.session_state.chat_history)
+                        if st.session_state.db is None:
+                            response = "Please connect to a database first."
+                        else:
+                            response = get_response(speech_text, st.session_state.db, st.session_state.chat_history)
+                        
                         st.markdown(response)
-                        play_tts(response)
+                        
+                        # Play audio in the browser
+                        audio_html = text_to_speech(response)
+                        st.markdown(audio_html, unsafe_allow_html=True)
 
                 st.session_state.chat_history.append(AIMessage(content=response))
 
@@ -185,8 +206,15 @@ if user_query:
             st.markdown(user_query)
 
         with st.chat_message("AI"):
-            response = get_response(user_query, st.session_state.db, st.session_state.chat_history)
+            if st.session_state.db is None:
+                response = "Please connect to a database first."
+            else:
+                response = get_response(user_query, st.session_state.db, st.session_state.chat_history)
+            
             st.markdown(response)
-            #play_tts(response)
+            
+            # Play audio in the browser
+            audio_html = text_to_speech(response)
+            st.markdown(audio_html, unsafe_allow_html=True)
 
     st.session_state.chat_history.append(AIMessage(content=response))
