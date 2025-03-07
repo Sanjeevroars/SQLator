@@ -29,12 +29,12 @@ def get_sql_chain(db):
     Write only the SQL query and nothing else.
     
     Question: {question}
-    SQL Query:
+    SQL Query: (only write SQL within ``` and a closing ```)
     """
     prompt = ChatPromptTemplate.from_template(template)
 
     api_key = os.getenv("GOOGLE_API_KEY")
-    llm = ChatGoogleGenerativeAI(model='gemini-1.5-flash', api_key=api_key, temperature=0)
+    llm = ChatGoogleGenerativeAI(model='gemini-2.0-flash', api_key=api_key, temperature=0)
 
     def get_schema(_):
         return db.get_table_info()
@@ -62,7 +62,7 @@ def get_response(user_query: str, db: SQLDatabase, chat_history: list):
     prompt = ChatPromptTemplate.from_template(template)
 
     api_key = os.getenv("GOOGLE_API_KEY")
-    llm = ChatGoogleGenerativeAI(model='gemini-1.5-flash', api_key=api_key, temperature=0)    
+    llm = ChatGoogleGenerativeAI(model='gemini-1.5-pro', api_key=api_key, temperature=0)    
 
     def clean_sql_string(sql_string):
         return sql_string.strip("```").lstrip("sql").strip()
@@ -187,6 +187,6 @@ if user_query:
         with st.chat_message("AI"):
             response = get_response(user_query, st.session_state.db, st.session_state.chat_history)
             st.markdown(response)
-            play_tts(response)
+            #play_tts(response)
 
     st.session_state.chat_history.append(AIMessage(content=response))
